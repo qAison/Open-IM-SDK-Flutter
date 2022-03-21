@@ -5,7 +5,6 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import io.flutter.Log;
@@ -19,7 +18,8 @@ import io.openim.flutter_openim_sdk.manager.FriendshipManager;
 import io.openim.flutter_openim_sdk.manager.GroupManager;
 import io.openim.flutter_openim_sdk.manager.IMManager;
 import io.openim.flutter_openim_sdk.manager.MessageManager;
-import io.openim.flutter_openim_sdk.util.CommonUtil;
+import io.openim.flutter_openim_sdk.manager.SignalingManager;
+import io.openim.flutter_openim_sdk.manager.UserManager;
 
 
 /**
@@ -33,20 +33,24 @@ public class FlutterOpenimSdkPlugin implements FlutterPlugin, MethodCallHandler 
 
     public static MethodChannel channel;
     private static IMManager imManager;
+    private static UserManager userManager;
     private static FriendshipManager friendshipManager;
     private static MessageManager messageManager;
     private static ConversationManager conversationManager;
     private static GroupManager groupManager;
+    private static SignalingManager signalingManager;
 
     public FlutterOpenimSdkPlugin() {
     }
 
     private FlutterOpenimSdkPlugin(Context context) {
         FlutterOpenimSdkPlugin.imManager = new IMManager();
+        FlutterOpenimSdkPlugin.userManager = new UserManager();
         FlutterOpenimSdkPlugin.friendshipManager = new FriendshipManager();
         FlutterOpenimSdkPlugin.messageManager = new MessageManager();
         FlutterOpenimSdkPlugin.conversationManager = new ConversationManager();
         FlutterOpenimSdkPlugin.groupManager = new GroupManager();
+        FlutterOpenimSdkPlugin.signalingManager = new SignalingManager();
     }
 
     @Override
@@ -68,18 +72,12 @@ public class FlutterOpenimSdkPlugin implements FlutterPlugin, MethodCallHandler 
 
     void parse(@NonNull MethodCall call, @NonNull Result result) {
         try {
-            String managerName = CommonUtil.getParamValue(call, "ManagerName");
+            String managerName = call.argument("ManagerName");
             Field field = FlutterOpenimSdkPlugin.class.getDeclaredField(managerName);
             Method method = field.get(new Object()).getClass().getDeclaredMethod(call.method, MethodCall.class, Result.class);
             Log.i("F-OpenIMSDK(flutter call native)", "{ class:" + managerName + ",  method:" + method.getName() + " }");
             method.invoke(field.get(new Object()), call, result);
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

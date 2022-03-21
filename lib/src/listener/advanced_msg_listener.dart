@@ -1,15 +1,40 @@
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 
+class OnAdvancedMsgListener {
+  /// Message read receipt
+  Function(List<ReadReceiptInfo> list)? onRecvC2CMessageReadReceipt;
 
-abstract class AdvancedMsgListener {
-  /// listener uniquely identifies
-  final String id;
+  Function(List<ReadReceiptInfo> list)? onRecvGroupMessageReadReceipt;
 
-  AdvancedMsgListener() : id = "id_${DateTime.now().microsecondsSinceEpoch}";
+  /// A friend revoked a message
+  Function(String msgId)? onRecvMessageRevoked;
 
-  void recvNewMessage(Message msg);
+  /// Receive new message
+  Function(Message msg)? onRecvNewMessage;
 
-  void recvC2CReadReceipt(List<HaveReadInfo> list);
+  /// Uniquely identifies
+  String id;
 
-  void recvMessageRevoked(String msgId);
+  OnAdvancedMsgListener({
+    this.onRecvC2CMessageReadReceipt,
+    this.onRecvGroupMessageReadReceipt,
+    this.onRecvMessageRevoked,
+    this.onRecvNewMessage,
+  }) : id = "id_${DateTime.now().microsecondsSinceEpoch}";
+
+  void recvC2CMessageReadReceipt(List<ReadReceiptInfo> list) {
+    onRecvC2CMessageReadReceipt?.call(list);
+  }
+
+  void recvGroupMessageReadReceipt(List<ReadReceiptInfo> list) {
+    onRecvGroupMessageReadReceipt?.call(list);
+  }
+
+  void recvMessageRevoked(String msgId) {
+    onRecvMessageRevoked?.call(msgId);
+  }
+
+  void recvNewMessage(Message msg) {
+    onRecvNewMessage?.call(msg);
+  }
 }

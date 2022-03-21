@@ -1,51 +1,87 @@
-//
-//  ConversationManager.swift
-//  Runner
-//
-//  Created by z1u24 on 2021/6/29.
-//
-
 import Foundation
 import OpenIMCore
 
-public class ConversationManager:NSObject{
-    private let channel:FlutterMethodChannel
+public class ConversationManager: BaseServiceManager {
     
-    init(channel:FlutterMethodChannel) {
-        self.channel = channel
+    public override func registerHandlers() {
+        super.registerHandlers()
+        self["setConversationListener"] = setConversationListener
+        self["getAllConversationList"] = getAllConversationList
+        self["getConversationListSplit"] = getConversationListSplit
+        self["getOneConversation"] = getOneConversation
+        self["getMultipleConversation"] = getMultipleConversation
+        self["deleteConversation"] = deleteConversation
+        self["setConversationDraft"] = setConversationDraft
+        self["pinConversation"] = pinConversation
+        // self["markSingleMessageHasRead"] = markSingleMessageHasRead
+        self["markGroupMessageHasRead"] = markGroupMessageHasRead
+        self["getTotalUnreadMsgCount"] = getTotalUnreadMsgCount
+        self["getConversationIDBySessionType"] = getConversationIDBySessionType
+        self["setConversationRecvMessageOpt"] = setConversationRecvMessageOpt
+        self["getConversationRecvMessageOpt"] = getConversationRecvMessageOpt
     }
     
-    func setConversationListener(methodCall: FlutterMethodCall, result: FlutterResult){
+    func setConversationListener(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkSetConversationListener(ConversationListener(channel: channel))
+        callBack(result)
     }
     
     func getAllConversationList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetAllConversationList(BaseImpl(result: result))
+        Open_im_sdkGetAllConversationList(BaseCallback(result: result), methodCall[string: "operationID"])
     }
-    
+
+    func getConversationListSplit(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetConversationListSplit(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[int: "offset"], methodCall[int: "count"])
+    }
+
     func getOneConversation(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetOneConversation(CommonUtil.getConversationSourceId(methodCall: methodCall), CommonUtil.getConversationSessionType(methodCall: methodCall), BaseImpl(result: result))
+        Open_im_sdkGetOneConversation(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[int: "sessionType"], methodCall[string: "sourceID"])
     }
     
     func getMultipleConversation(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetMultipleConversation(CommonUtil.getConversationIds(methodCall: methodCall), BaseImpl(result: result))
+        Open_im_sdkGetMultipleConversation(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "conversationIDList"])
     }
     
     func deleteConversation(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkDeleteConversation(CommonUtil.getConversationId(methodCall: methodCall), BaseImpl(result: result))
+        Open_im_sdkDeleteConversation(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"])
     }
     
     func setConversationDraft(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkSetConversationDraft(CommonUtil.getConversationId(methodCall: methodCall), CommonUtil.getConversationDraft(methodCall: methodCall), BaseImpl(result: result))
+        Open_im_sdkSetConversationDraft(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"], methodCall[string: "draftText"])
     }
     
     func pinConversation(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkPinConversation(CommonUtil.getConversationId(methodCall: methodCall), CommonUtil.isPinnedConversation(methodCall: methodCall), BaseImpl(result: result))
+        Open_im_sdkPinConversation(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"], methodCall[bool: "isPinned"])
+    }
+    
+    // func markSingleMessageHasRead(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+    //     Open_im_sdkMarkSingleMessageHasRead(BaseCallback(result: result), methodCall[string: "userID"])
+    // }
+    
+    func markGroupMessageHasRead(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkMarkGroupMessageHasRead(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "groupID"])
+    }
+    
+    func getTotalUnreadMsgCount(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetTotalUnreadMsgCount(BaseCallback(result: result), methodCall[string: "operationID"])
+    }
+    
+    func getConversationIDBySessionType(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        let conversationID = Open_im_sdkGetConversationIDBySessionType(methodCall[string: "sourceID"], methodCall[int: "sessionType"])
+        callBack(result, conversationID)
+    }
+
+    func setConversationRecvMessageOpt(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkSetConversationRecvMessageOpt(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "conversationIDList"], methodCall[int: "status"])
+    }
+
+    func getConversationRecvMessageOpt(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetConversationRecvMessageOpt(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "conversationIDList"])
     }
 }
 
 
-public class ConversationListener:NSObject,Open_im_sdkOnConversationListenerProtocol {
+public class ConversationListener: NSObject, Open_im_sdk_callbackOnConversationListenerProtocol {
     
     private let channel:FlutterMethodChannel
     
@@ -76,8 +112,6 @@ public class ConversationListener:NSObject,Open_im_sdkOnConversationListenerProt
     public func onTotalUnreadMessageCountChanged(_ totalUnreadCount: Int32) {
         CommonUtil.emitEvent(channel: channel, method: "conversationListener", type: "onTotalUnreadMessageCountChanged", errCode: nil, errMsg: nil, data: totalUnreadCount)
     }
-    
-    
-
 }
+
 

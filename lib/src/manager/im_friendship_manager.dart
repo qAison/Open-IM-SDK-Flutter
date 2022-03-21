@@ -1,160 +1,207 @@
-import 'dart:convert';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 
 class FriendshipManager {
   MethodChannel _channel;
-  late FriendshipListener friendshipListener;
+  late OnFriendshipListener listener;
 
   FriendshipManager(this._channel);
 
-  /// listener[FriendshipListener]
-  ///
-  Future setFriendshipListener(FriendshipListener listener) {
-    this.friendshipListener = listener;
+  /// Set up a friend relationship listener
+  /// 好友关系监听
+  Future setFriendshipListener(OnFriendshipListener listener) {
+    this.listener = listener;
     return _channel.invokeMethod('setFriendListener', _buildParam({}));
   }
 
-  /// get friend info by userid
-  ///
-  Future<List<UserInfo>> getFriendsInfo({required List<String> uidList}) {
-    return _channel
-        .invokeMethod('getFriendsInfo', _buildParam({"uidList": uidList}))
-        .then((value) => _toList(value));
-  }
+  /// Get friend info by user id
+  /// 查询好友信息
+  Future<List<UserInfo>> getFriendsInfo({
+    required List<String> uidList,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'getFriendsInfo',
+              _buildParam({
+                "uidList": uidList,
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
 
-  /// send an friend application
-  ///
-  Future<dynamic> addFriend({required String uid, required String reason}) {
-    return _channel.invokeMethod(
-        'addFriend', _buildParam({"uid": uid, "reqMessage": reason}));
-  }
+  /// Send an friend application
+  /// 发送一个好友请求
+  Future<dynamic> addFriend({
+    required String uid,
+    String? reason,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'addFriend',
+          _buildParam({
+            "toUserID": uid,
+            "reqMsg": reason,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  /// get all friend application
-  /// including those initiated by you and sent to you by others
-  Future<List<UserInfo>> getFriendApplicationList() {
-    return _channel
-        .invokeMethod('getFriendApplicationList', _buildParam({}))
-        .then((value) => _toList(value));
-  }
+  /// Get someone's request to add me as a friend
+  /// 获取别人加我为好友的申请
+  Future<List<FriendApplicationInfo>> getRecvFriendApplicationList(
+          {String? operationID}) =>
+      _channel
+          .invokeMethod(
+              'getRecvFriendApplicationList',
+              _buildParam({
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) =>
+              Utils.toList(value, (v) => FriendApplicationInfo.fromJson(v)));
 
-  /// find all friends
-  ///
-  Future<List<UserInfo>> getFriendList() {
-    return _channel
-        .invokeMethod('getFriendList', _buildParam({}))
-        .then((value) => _toList(value));
-  }
+  /// Get friend requests from me
+  /// 获取我发出的好友申请
+  Future<List<FriendApplicationInfo>> getSendFriendApplicationList(
+          {String? operationID}) =>
+      _channel
+          .invokeMethod(
+              'getSendFriendApplicationList',
+              _buildParam({
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) =>
+              Utils.toList(value, (v) => FriendApplicationInfo.fromJson(v)));
 
-  Future<List<dynamic>> getFriendListMap() {
-    return _channel
-        .invokeMethod('getFriendList', _buildParam({}))
-        .then((value) => _toListMap(value));
-  }
+  /// Find all friends including those who have been added to the blacklist
+  /// 获取好友列表包含已拉入黑名单的好友
+  Future<List<UserInfo>> getFriendList({String? operationID}) => _channel
+      .invokeMethod(
+          'getFriendList',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }))
+      .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
 
-  /// modify friend information, only [comment] can be modified
-  ///
-  Future<dynamic> setFriendInfo(
-      {required String uid, required String comment}) {
-    return _channel.invokeMethod(
-        'setFriendInfo',
-        _buildParam({
-          'uid': uid,
-          'comment': comment,
-        }));
-  }
+  /// Find all friends including those who have been added to the blacklist
+  /// 获取好友列表
+  Future<List<dynamic>> getFriendListMap({String? operationID}) => _channel
+      .invokeMethod(
+          'getFriendList',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }))
+      .then((value) => Utils.toListMap(value));
 
-  /// add to blacklist
-  ///
-  Future<dynamic> addToBlackList({required String uid}) {
-    return _channel.invokeMethod('addToBlackList', _buildParam({"uid": uid}));
-  }
+  /// Modify friend remark name
+  /// 设置好友备注
+  Future<dynamic> setFriendRemark({
+    required String uid,
+    required String remark,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'setFriendRemark',
+          _buildParam({
+            'toUserID': uid,
+            'remark': remark,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  /// find all blacklist
-  ///
-  Future<List<UserInfo>> getBlackList() {
-    return _channel
-        .invokeMethod('getBlackList', _buildParam({}))
-        .then((value) => _toList(value));
-  }
+  /// Add friends to blacklist
+  /// 加入黑名单
+  Future<dynamic> addBlacklist({
+    required String uid,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'addBlacklist',
+          _buildParam({
+            "uid": uid,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  /// remove from blacklist
-  ///
-  Future<dynamic> deleteFromBlackList({required String uid}) {
-    return _channel.invokeMethod(
-        'deleteFromBlackList', _buildParam({"uid": uid}));
-  }
+  /// Find all blacklist
+  /// 获取黑名单列表
+  Future<List<UserInfo>> getBlacklist({String? operationID}) => _channel
+      .invokeMethod(
+          'getBlacklist',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }))
+      .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
 
-  /// determine if there is a friendship by userId
-  ///
-  Future<List<UserInfo>> checkFriend(List<String> uidList) {
-    return _channel
-        .invokeMethod('checkFriend', _buildParam({'uidList': uidList}))
-        .then((value) => _toList(value));
-  }
+  /// Remove from blacklist
+  /// 从黑名单移除
+  Future<dynamic> removeBlacklist({
+    required String uid,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'removeBlacklist',
+          _buildParam({
+            "uid": uid,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  /// dissolve friendship from friend list
-  ///
-  Future<dynamic> deleteFromFriendList({required String uid}) {
-    return _channel.invokeMethod(
-        'deleteFromFriendList', _buildParam({"uid": uid}));
-  }
+  /// Determine if there is a friendship by userId
+  /// 检查友好关系
+  Future<List<FriendshipInfo>> checkFriend({
+    required List<String> uidList,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'checkFriend',
+              _buildParam({
+                'uidList': uidList,
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) =>
+              Utils.toList(value, (v) => FriendshipInfo.fromJson(v)));
 
-  /// accept application of be friend
-  ///
-  Future<dynamic> acceptFriendApplication({required String uid}) {
-    return _channel.invokeMethod(
-        'acceptFriendApplication', _buildParam({"uid": uid}));
-  }
+  /// Dissolve friendship from friend list
+  /// 删除好友
+  Future<dynamic> deleteFriend({
+    required String uid,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'deleteFriend',
+          _buildParam({
+            "uid": uid,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  /// refuse application of be friend
-  ///
-  Future<dynamic> refuseFriendApplication({required String uid}) {
-    return _channel.invokeMethod(
-        'refuseFriendApplication', _buildParam({"uid": uid}));
-  }
+  /// Accept application of be friend
+  /// 接受好友请求
+  Future<dynamic> acceptFriendApplication({
+    required String uid,
+    String? handleMsg,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'acceptFriendApplication',
+          _buildParam({
+            "toUserID": uid,
+            "handleMsg": handleMsg,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  ///
-  ///
-  Future<dynamic> forceSyncFriendApplication() {
-    return _channel.invokeMethod('forceSyncFriendApplication', _buildParam({}));
-  }
-
-  ///
-  ///
-  Future<dynamic> forceSyncFriend() {
-    return _channel.invokeMethod('forceSyncFriend', _buildParam({}));
-  }
-
-  ///
-  Future<dynamic> forceSyncBlackList() {
-    return _channel.invokeMethod('forceSyncBlackList', _buildParam({}));
-  }
+  /// Refuse application of be friend
+  /// 拒绝好友请求
+  Future<dynamic> refuseFriendApplication({
+    required String uid,
+    String? handleMsg,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'refuseFriendApplication',
+          _buildParam({
+            "toUserID": uid,
+            "handleMsg": handleMsg,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
   static Map _buildParam(Map param) {
     param["ManagerName"] = "friendshipManager";
     return param;
-  }
-
-  static List<UserInfo> _toList(String? value) {
-    var list = _formatJson(value);
-    if (null == list) return <UserInfo>[];
-    return (list as List).map((e) => UserInfo.fromJson(e)).toList();
-  }
-
-  static List<dynamic> _toListMap(String? value) {
-    var list = _formatJson(value);
-    return list;
-  }
-
-  static UserInfo _toObj(String value) => UserInfo.fromJson(_formatJson(value));
-
-  static dynamic _formatJson(value) {
-    return jsonDecode(_printValue(value));
-  }
-
-  static String _printValue(value) {
-    return value;
   }
 }

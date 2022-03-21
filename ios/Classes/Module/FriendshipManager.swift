@@ -1,126 +1,143 @@
-//
-//  FriendshipManager.swift
-//  Runner
-//
-//  Created by z1u24 on 2021/6/29.
-//
-
 import Foundation
 import OpenIMCore
 
-public class FriendshipManager:NSObject{
-    private let channel:FlutterMethodChannel
+public class FriendshipManager: BaseServiceManager {
     
-    init(channel:FlutterMethodChannel) {
-        self.channel = channel
+    public override func registerHandlers() {
+        super.registerHandlers()
+        self["setFriendListener"] = setFriendListener
+        self["getFriendsInfo"] = getFriendsInfo
+        self["addFriend"] = addFriend
+        self["getRecvFriendApplicationList"] = getRecvFriendApplicationList
+        self["getSendFriendApplicationList"] = getSendFriendApplicationList
+        self["getFriendList"] = getFriendList
+        self["setFriendRemark"] = setFriendRemark
+        self["addBlacklist"] = addBlacklist
+        self["getBlacklist"] = getBlacklist
+        self["removeBlacklist"] = removeBlacklist
+        self["checkFriend"] = checkFriend
+        self["deleteFriend"] = deleteFriend
+        self["acceptFriendApplication"] = acceptFriendApplication
+        self["refuseFriendApplication"] = refuseFriendApplication
+//        self["forceSyncFriendApplication"] = forceSyncFriendApplication
+//        self["forceSyncFriend"] = forceSyncFriend
+//        self["forceSyncBlackList"] = forceSyncBlackList
     }
     
-    func setFriendListener(methodCall: FlutterMethodCall, result: FlutterResult){
+    func setFriendListener(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkSetFriendListener(FriendshipListener(channel: channel))
+        callBack(result)
     }
     
     func getFriendsInfo(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetFriendsInfo(BaseImpl(result: result), CommonUtil.getUidList(methodCall: methodCall))
+        Open_im_sdkGetDesignatedFriendsInfo(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "uidList"])
     }
     
     func addFriend(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkAddFriend(BaseImpl(result: result), CommonUtil.getSDKJsonParam(methodCall: methodCall))
+        Open_im_sdkAddFriend(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
     }
     
-    func getFriendApplicationList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetFriendApplicationList(BaseImpl(result: result))
+    func getRecvFriendApplicationList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetRecvFriendApplicationList(BaseCallback(result: result), methodCall[string: "operationID"])
     }
-    
+
+    func getSendFriendApplicationList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetSendFriendApplicationList(BaseCallback(result: result), methodCall[string: "operationID"])
+    }
+
     func getFriendList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetFriendList(BaseImpl(result: result))
+        Open_im_sdkGetFriendList(BaseCallback(result: result), methodCall[string: "operationID"])
     }
     
-    func setFriendInfo(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkSetFriendInfo(CommonUtil.getSDKJsonParam(methodCall: methodCall), BaseImpl(result: result))
+    func setFriendRemark(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkSetFriendRemark(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
     }
     
-    func addToBlackList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkAddToBlackList(BaseImpl(result: result), CommonUtil.getJsonUid(methodCall: methodCall))
+    func addBlacklist(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkAddBlack(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "uid"])
     }
     
-    func getBlackList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkGetBlackList(BaseImpl(result: result))
+    func getBlacklist(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetBlackList(BaseCallback(result: result), methodCall[string: "operationID"])
     }
     
-    func deleteFromBlackList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkDeleteFromBlackList(BaseImpl(result: result), CommonUtil.getJsonUid(methodCall: methodCall))
+    func removeBlacklist(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkRemoveBlack(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "uid"])
     }
     
     func checkFriend(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkCheckFriend(BaseImpl(result: result), CommonUtil.getUidList(methodCall: methodCall))
+        Open_im_sdkCheckFriend(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "uidList"])
     }
     
-    func deleteFromFriendList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkDeleteFromFriendList(CommonUtil.getJsonUid(methodCall: methodCall), BaseImpl(result: result))
+    func deleteFriend(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkDeleteFriend(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "uid"])
     }
     
     func acceptFriendApplication(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkAcceptFriendApplication(BaseImpl(result: result), CommonUtil.getJsonUid(methodCall: methodCall))
+        Open_im_sdkAcceptFriendApplication(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
     }
     
     func refuseFriendApplication(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        Open_im_sdkRefuseFriendApplication(BaseImpl(result: result), CommonUtil.getJsonUid(methodCall: methodCall))
+        Open_im_sdkRefuseFriendApplication(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
     }
     
-    func forceSyncFriendApplication(methodCall: FlutterMethodCall, result: FlutterResult){
-        Open_im_sdkForceSyncFriendApplication();
-    }
-    
-    func forceSyncFriend(methodCall: FlutterMethodCall, result: FlutterResult){
-        Open_im_sdkForceSyncFriend()
-    }
-    
-    func forceSyncBlackList(methodCall: FlutterMethodCall, result: FlutterResult){
-        Open_im_sdkForceSyncBlackList()
-    }
+//     func forceSyncFriendApplication(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+//         Open_im_sdkForceSyncFriendApplication()
+//         callBack(result)
+//     }
+//
+//     func forceSyncFriend(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+//         Open_im_sdkForceSyncFriend()
+//         callBack(result)
+//     }
+//
+//     func forceSyncBlackList(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+//         Open_im_sdkForceSyncBlackList()
+//         callBack(result)
+//     }
 }
 
-public class FriendshipListener:NSObject,Open_im_sdkOnFriendshipListenerProtocol {
+public class FriendshipListener: NSObject, Open_im_sdk_callbackOnFriendshipListenerProtocol {
     private let channel:FlutterMethodChannel
     
     init(channel:FlutterMethodChannel) {
         self.channel = channel
     }
     
-    public func onBlackListAdd(_ userInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onBlackListAdd", errCode: nil, errMsg: nil, data: userInfo)
+    public func onBlackAdded(_ blackInfo: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onBlacklistAdded", errCode: nil, errMsg: nil, data: blackInfo)
     }
     
-    public func onBlackListDeleted(_ userInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onBlackListDeleted", errCode: nil, errMsg: nil, data: userInfo)
+    public func onBlackDeleted(_ blackInfo: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onBlacklistDeleted", errCode: nil, errMsg: nil, data: blackInfo)
     }
     
-    public func onFriendApplicationListAccept(_ applyUserInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationListAccept", errCode: nil, errMsg: nil, data: applyUserInfo)
+    public func onFriendApplicationAccepted(_ friendApplication: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationAccepted", errCode: nil, errMsg: nil, data: friendApplication)
     }
     
-    public func onFriendApplicationListAdded(_ applyUserInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationListAdded", errCode: nil, errMsg: nil, data: applyUserInfo)
+    public func onFriendApplicationAdded(_ friendApplication: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationAdded", errCode: nil, errMsg: nil, data: friendApplication)
     }
     
-    public func onFriendApplicationListDeleted(_ applyUserInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationListDeleted", errCode: nil, errMsg: nil, data: applyUserInfo)
+    public func onFriendApplicationDeleted(_ friendApplication: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationDeleted", errCode: nil, errMsg: nil, data: friendApplication)
     }
     
-    public func onFriendApplicationListReject(_ applyUserInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationListReject", errCode: nil, errMsg: nil, data: applyUserInfo)
+    public func onFriendApplicationRejected(_ friendApplication: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendApplicationRejected", errCode: nil, errMsg: nil, data: friendApplication)
     }
     
     public func onFriendInfoChanged(_ friendInfo: String?) {
         CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendInfoChanged", errCode: nil, errMsg: nil, data: friendInfo)
     }
     
-    public func onFriendListAdded(_ friendInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendListAdded", errCode: nil, errMsg: nil, data: friendInfo)
+    public func onFriendAdded(_ friendInfo: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendAdded", errCode: nil, errMsg: nil, data: friendInfo)
     }
     
-    public func onFriendListDeleted(_ friendInfo: String?) {
-        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendListDeleted", errCode: nil, errMsg: nil, data: friendInfo)
+    public func onFriendDeleted(_ friendInfo: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "friendListener", type: "onFriendDeleted", errCode: nil, errMsg: nil, data: friendInfo)
     }
-    
 }
+

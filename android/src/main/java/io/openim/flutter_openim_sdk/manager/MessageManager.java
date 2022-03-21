@@ -1,23 +1,24 @@
 package io.openim.flutter_openim_sdk.manager;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-import io.openim.flutter_openim_sdk.listener.AdvancedMsgListener;
-import io.openim.flutter_openim_sdk.listener.BaseListener;
-import io.openim.flutter_openim_sdk.listener.MsgSendProgressListener;
+import io.openim.flutter_openim_sdk.listener.OnAdvancedMsgListener;
+import io.openim.flutter_openim_sdk.listener.OnBaseListener;
+import io.openim.flutter_openim_sdk.listener.OnMsgSendListener;
 import io.openim.flutter_openim_sdk.util.CommonUtil;
-import open_im_sdk.OnAdvancedMsgListener;
 import open_im_sdk.Open_im_sdk;
 
 
-public class MessageManager {
+public class MessageManager extends BaseManager {
     private final static String KEY_ID = "id";
     //    private final static Map<String, OnAdvancedMsgListener> listeners = new HashMap<>();
-    private static boolean initializedListener = false;
+ /*   private static boolean initializedListener = false;
     private final static Map<String, AdvancedMsgListener> listeners = new ConcurrentHashMap<>();
+
+    protected void clearListeners() {
+        initializedListener = false;
+        listeners.clear();
+    }
 
     private final static OnAdvancedMsgListener sdkMsgListener = new OnAdvancedMsgListener() {
         @Override
@@ -44,6 +45,7 @@ public class MessageManager {
 
     public void addAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
         String key = methodCall.argument(KEY_ID);
+        Open_im_sdk.addAdvancedMsgListener(new AdvancedMsgListener(key));
         listeners.put(key, new AdvancedMsgListener(key));
         if (!initializedListener) {
             initializedListener = true;
@@ -58,7 +60,7 @@ public class MessageManager {
             initializedListener = false;
             Open_im_sdk.removeAdvancedMsgListener(sdkMsgListener);
         }
-    }
+    }*/
 /*
 
     public void addAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
@@ -77,163 +79,246 @@ public class MessageManager {
     }
 
 */
+    public void setAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
+        String key = methodCall.argument(KEY_ID);
+        Open_im_sdk.setAdvancedMsgListener(new OnAdvancedMsgListener(key));
+    }
 
     public void sendMessage(MethodCall methodCall, MethodChannel.Result result) {
-        MsgSendProgressListener listener = new MsgSendProgressListener(result, methodCall);
-        Open_im_sdk.sendMessage(listener,
-                CommonUtil.getSendMessageContent(methodCall),
-                CommonUtil.getSendMessageReceiver(methodCall),
-                CommonUtil.geSendMessageGroupId(methodCall),
-                CommonUtil.getSendMessageOnlineOnly(methodCall));
+        Open_im_sdk.sendMessage(
+                new OnMsgSendListener(result, methodCall),
+                value(methodCall, "operationID"),
+                jsonValue(methodCall, "message"),
+                value(methodCall, "userID"),
+                value(methodCall, "groupID"),
+                jsonValue(methodCall, "offlinePushInfo")
+        );
     }
 
     public void getHistoryMessageList(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.getHistoryMessageList(new BaseListener(result), CommonUtil.getSDKJsonParam(methodCall));
+        Open_im_sdk.getHistoryMessageList(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                jsonValue(methodCall)
+        );
     }
 
     public void revokeMessage(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.revokeMessage(new BaseListener(result), CommonUtil.getSDKJsonParam(methodCall));
+        Open_im_sdk.revokeMessage(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                jsonValue(methodCall)
+        );
     }
 
     public void deleteMessageFromLocalStorage(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.deleteMessageFromLocalStorage(new BaseListener(result), CommonUtil.getSDKJsonParam(methodCall));
+        Open_im_sdk.deleteMessageFromLocalStorage(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                jsonValue(methodCall)
+        );
     }
 
-    public void deleteMessages(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.deleteMessages(new BaseListener(result), CommonUtil.getSDKJsonParam(methodCall));
-    }
+//    public void deleteMessages(MethodCall methodCall, MethodChannel.Result result) {
+//        Open_im_sdk.deleteMessages(new OnBaseListener(result), CommonUtil.getSDKJsonParam(methodCall));
+//    }
 
     public void insertSingleMessageToLocalStorage(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.insertSingleMessageToLocalStorage(new BaseListener(result),
-                CommonUtil.getSingleMessageContent(methodCall),
-                CommonUtil.getSingleMessageUserid(methodCall),
-                CommonUtil.getSingleMessageSender(methodCall));
+        Open_im_sdk.insertSingleMessageToLocalStorage(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                jsonValue(methodCall, "message"),
+                value(methodCall, "receiverID"),
+                value(methodCall, "senderID")
+        );
     }
 
-    public void findMessages(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.findMessages(new BaseListener(result), CommonUtil.getMessageIdList(methodCall));
+    public void insertGroupMessageToLocalStorage(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.insertGroupMessageToLocalStorage(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                jsonValue(methodCall, "message"),
+                value(methodCall, "groupID"),
+                value(methodCall, "senderID")
+        );
     }
+
+//    public void findMessages(MethodCall methodCall, MethodChannel.Result result) {
+//        Open_im_sdk.findMessages(new OnBaseListener(result), jsonValue(methodCall, "messageIDList"));
+//    }
 
     public void markC2CMessageAsRead(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.markC2CMessageAsRead(new BaseListener(result),
-                CommonUtil.getSingleMessageUserid(methodCall),
-                CommonUtil.getMessageIdList(methodCall));
+        Open_im_sdk.markC2CMessageAsRead(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                value(methodCall, "userID"),
+                jsonValue(methodCall, "messageIDList")
+        );
     }
 
     public void typingStatusUpdate(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.typingStatusUpdate(CommonUtil.getSingleMessageUserid(methodCall),
-                CommonUtil.getSingleMessageTyping(methodCall));
+        Open_im_sdk.typingStatusUpdate(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                value(methodCall, "userID"),
+                value(methodCall, "msgTip")
+        );
     }
 
     public void createTextMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createTextMessage(
-                        CommonUtil.getMessageText(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "text")));
     }
 
     public void createTextAtMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createTextAtMessage(
-                        CommonUtil.getMessageText(methodCall),
-                        CommonUtil.getAtUserList(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "text"),
+                        jsonValue(methodCall, "atUserList")));
     }
 
     public void createImageMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createImageMessage(
-                        CommonUtil.getImagePath(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "imagePath")));
     }
 
     public void createImageMessageFromFullPath(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createImageMessageFromFullPath(
-                        CommonUtil.getImagePath(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "imagePath")));
     }
-
     public void createSoundMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createSoundMessage(
-                        CommonUtil.getSoundPath(methodCall),
-                        CommonUtil.getSoundDuration(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "soundPath"),
+                        int2long(methodCall, "duration")));
     }
 
     public void createSoundMessageFromFullPath(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createSoundMessageFromFullPath(
-                        CommonUtil.getSoundPath(methodCall),
-                        CommonUtil.getSoundDuration(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "soundPath"),
+                        int2long(methodCall, "duration")));
     }
 
     public void createVideoMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createVideoMessage(
-                        CommonUtil.getVideoPath(methodCall),
-                        CommonUtil.getVideoType(methodCall),
-                        CommonUtil.getVideoDuration(methodCall),
-                        CommonUtil.getVideoSnapshotPath(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "videoPath"),
+                        value(methodCall, "videoType"),
+                        int2long(methodCall, "duration"),
+                        value(methodCall, "snapshotPath")));
     }
 
     public void createVideoMessageFromFullPath(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createVideoMessageFromFullPath(
-                        CommonUtil.getVideoPath(methodCall),
-                        CommonUtil.getVideoType(methodCall),
-                        CommonUtil.getVideoDuration(methodCall),
-                        CommonUtil.getVideoSnapshotPath(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "videoPath"),
+                        value(methodCall, "videoType"),
+                        int2long(methodCall, "duration"),
+                        value(methodCall, "snapshotPath")));
     }
 
     public void createFileMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createFileMessage(
-                        CommonUtil.getFilePath(methodCall),
-                        CommonUtil.getFileName(methodCall)));
+                        value(methodCall, "operationID"),
+                        value(methodCall, "filePath"),
+                        value(methodCall, "fileName")));
+    }
+
+    public void createFileMessageFromFullPath(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createFileMessageFromFullPath(
+                        value(methodCall, "operationID"),
+                        value(methodCall, "filePath"),
+                        value(methodCall, "fileName")));
     }
 
     public void createMergerMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createMergerMessage(
-                        CommonUtil.getMergerMessageList(methodCall),
-                        CommonUtil.getMergerMessageTitle(methodCall),
-                        CommonUtil.getSummaryList(methodCall)));
+                        value(methodCall, "operationID"),
+                        jsonValue(methodCall, "messageList"),
+                        value(methodCall, "title"),
+                        jsonValue(methodCall, "summaryList")));
     }
 
 
     public void createForwardMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createForwardMessage(
-                        CommonUtil.getForwardMessage(methodCall)));
+                        value(methodCall, "operationID"),
+                        jsonValue(methodCall, "message")));
     }
 
     public void createLocationMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result, Open_im_sdk.createLocationMessage(
-                CommonUtil.getMessageDes(methodCall),
-                CommonUtil.getLocationLongitude(methodCall),
-                CommonUtil.getLocationLatitude(methodCall)
+                value(methodCall, "operationID"),
+                value(methodCall, "description"),
+                value(methodCall, "longitude"),
+                value(methodCall, "latitude")
         ));
     }
 
     public void createCustomMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result, Open_im_sdk.createCustomMessage(
-                CommonUtil.getCustomMessageData(methodCall),
-                CommonUtil.getCustomMessageExt(methodCall),
-                CommonUtil.getMessageDes(methodCall)
+                value(methodCall, "operationID"),
+                value(methodCall, "data"),
+                value(methodCall, "extension"),
+                value(methodCall, "description")
         ));
     }
 
     public void createQuoteMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result, Open_im_sdk.createQuoteMessage(
-                CommonUtil.getQuoteMessageText(methodCall),
-                CommonUtil.getQuoteMessageBody(methodCall)
+                value(methodCall, "operationID"),
+                value(methodCall, "quoteText"),
+                jsonValue(methodCall, "quoteMessage")
         ));
     }
 
     public void createCardMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result, Open_im_sdk.createCardMessage(
-                CommonUtil.getCardMessage(methodCall)
+                value(methodCall, "operationID"),
+                jsonValue(methodCall, "cardMessage")
         ));
     }
 
-    public void forceSyncMsg(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.forceSyncMsg();
+    public void createFaceMessage(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result, Open_im_sdk.createFaceMessage(
+                value(methodCall, "operationID"),
+                int2long(methodCall, "index"),
+                value(methodCall, "data")
+        ));
+    }
+//    public void forceSyncMsg(MethodCall methodCall, MethodChannel.Result result) {
+//        Open_im_sdk.forceSyncMsg();
+//    }
+
+    public void clearC2CHistoryMessage(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.clearC2CHistoryMessage(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                value(methodCall, "userID")
+        );
+    }
+
+    public void clearGroupHistoryMessage(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.clearGroupHistoryMessage(
+                new OnBaseListener(result),
+                value(methodCall, "operationID"),
+                value(methodCall, "groupID")
+        );
     }
 }

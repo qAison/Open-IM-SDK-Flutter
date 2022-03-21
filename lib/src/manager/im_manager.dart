@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
@@ -9,161 +9,137 @@ class IMManager {
   late FriendshipManager friendshipManager;
   late MessageManager messageManager;
   late GroupManager groupManager;
-  late OfflinePushManager offlinePushManager;
+  late UserManager userManager;
+
+  // late OfflinePushManager offlinePushManager;
   late SignalingManager signalingManager;
-  late InitSDKListener _initSDKListener;
+
+  late OnConnectListener _connectListener;
   late String uid;
   late UserInfo uInfo;
-  bool isInitialized = false;
+  bool isLogined = false;
 
   IMManager(this._channel) {
     conversationManager = ConversationManager(_channel);
     friendshipManager = FriendshipManager(_channel);
     messageManager = MessageManager(_channel);
     groupManager = GroupManager(_channel);
-    offlinePushManager = OfflinePushManager(_channel);
+    userManager = UserManager(_channel);
+    // offlinePushManager = OfflinePushManager(_channel);
     signalingManager = SignalingManager(_channel);
-    addNativeCallback(_channel);
+    _addNativeCallback(_channel);
   }
 
-  void addNativeCallback(MethodChannel _channel) {
+  void _addNativeCallback(MethodChannel _channel) {
     _channel.setMethodCallHandler((call) {
       try {
-        if (call.method == ListenerType.initSDKListener) {
+        log('Flutter : $call');
+        if (call.method == ListenerType.connectListener) {
+          String type = call.arguments['type'];
+          switch (type) {
+            case 'onConnectFailed':
+              int? errCode = call.arguments['errCode'];
+              String? errMsg = call.arguments['errMsg'];
+              _connectListener.connectFailed(errCode, errMsg);
+              break;
+            case 'onConnecting':
+              _connectListener.connecting();
+              break;
+            case 'onConnectSuccess':
+              _connectListener.connectSuccess();
+              break;
+            case 'onKickedOffline':
+              _connectListener.kickedOffline();
+              break;
+            case 'onUserSigExpired':
+              _connectListener.userSigExpired();
+              break;
+          }
+        } else if (call.method == ListenerType.userListener) {
           String type = call.arguments['type'];
           dynamic data = call.arguments['data'];
           switch (type) {
             case 'onSelfInfoUpdated':
-              uInfo = UserInfo.fromJson(_formatJson(data));
-              _initSDKListener.selfInfoUpdated(uInfo);
-              break;
-            case 'onConnectFailed':
-              int? errCode = call.arguments['errCode'];
-              String? errMsg = call.arguments['errMsg'];
-              _initSDKListener.connectFailed(errCode, errMsg);
-              break;
-            case 'onConnecting':
-              _initSDKListener.connecting();
-              break;
-            case 'onConnectSuccess':
-              _initSDKListener.connectSuccess();
-              break;
-            case 'onKickedOffline':
-              _initSDKListener.kickedOffline();
-              break;
-            case 'onUserSigExpired':
-              _initSDKListener.userSigExpired();
+              uInfo = Utils.toObj(data, (map) => UserInfo.fromJson(map));
+              userManager.listener.selfInfoUpdated(uInfo);
               break;
           }
         } else if (call.method == ListenerType.groupListener) {
-          var args = call.arguments;
-          String type = args['type'];
-          Map<dynamic, dynamic> map = args['data'];
+          String type = call.arguments['type'];
+          dynamic data = call.arguments['data'];
           switch (type) {
-            case 'onMemberEnter':
-              groupManager.groupListener.memberEnter(
-                map['groupId'],
-                (_formatJson(map['memberList']) as List)
-                    .map((e) => GroupMembersInfo.fromJson(e))
-                    .toList(),
-              );
+            case 'onGroupApplicationAccepted':
+              final i = Utils.toObj(
+                  data, (map) => GroupApplicationInfo.fromJson(map));
+              groupManager.listener.groupApplicationAccepted(i);
               break;
-            case 'onMemberLeave':
-              groupManager.groupListener.memberLeave(
-                map['groupId'],
-                GroupMembersInfo.fromJson(_formatJson(map['member'])),
-              );
+            case 'onGroupApplicationAdded':
+              final i = Utils.toObj(
+                  data, (map) => GroupApplicationInfo.fromJson(map));
+              groupManager.listener.groupApplicationAdded(i);
               break;
-            case 'onMemberInvited':
-              groupManager.groupListener.memberInvited(
-                map['groupId'],
-                GroupMembersInfo.fromJson(_formatJson(map['opUser'])),
-                (_formatJson(map['memberList']) as List)
-                    .map((e) => GroupMembersInfo.fromJson(e))
-                    .toList(),
-              );
+            case 'onGroupApplicationDeleted':
+              final i = Utils.toObj(
+                  data, (map) => GroupApplicationInfo.fromJson(map));
+              groupManager.listener.groupApplicationDeleted(i);
               break;
-            case 'onMemberKicked':
-              groupManager.groupListener.memberKicked(
-                map['groupId'],
-                GroupMembersInfo.fromJson(_formatJson(map['opUser'])),
-                (_formatJson(map['memberList']) as List)
-                    .map((e) => GroupMembersInfo.fromJson(e))
-                    .toList(),
-              );
-              break;
-            case 'onGroupCreated':
-              groupManager.groupListener.groupCreated(
-                map['groupId'],
-              );
+            case 'onGroupApplicationRejected':
+              final i = Utils.toObj(
+                  data, (map) => GroupApplicationInfo.fromJson(map));
+              groupManager.listener.groupApplicationRejected(i);
               break;
             case 'onGroupInfoChanged':
-              groupManager.groupListener.groupInfoChanged(
-                map['groupId'],
-                GroupInfo.fromJson(_formatJson(map['groupInfo'])),
-              );
+              final i = Utils.toObj(data, (map) => GroupInfo.fromJson(map));
+              groupManager.listener.groupInfoChanged(i);
               break;
-            case 'onReceiveJoinApplication':
-              groupManager.groupListener.receiveJoinApplication(
-                map['groupId'],
-                GroupMembersInfo.fromJson(_formatJson(map['member'])),
-                map['opReason'],
-              );
+            case 'onGroupMemberAdded':
+              final i =
+                  Utils.toObj(data, (map) => GroupMembersInfo.fromJson(map));
+              groupManager.listener.groupMemberAdded(i);
               break;
-            case 'onApplicationProcessed':
-              groupManager.groupListener.applicationProcessed(
-                map['groupId'],
-                GroupMembersInfo.fromJson(_formatJson(map['opUser'])),
-                map['agreeOrReject'],
-                map['opReason'],
-              );
+            case 'onGroupMemberDeleted':
+              final i =
+                  Utils.toObj(data, (map) => GroupMembersInfo.fromJson(map));
+              groupManager.listener.groupMemberDeleted(i);
               break;
-            // case 'onMemberInfoChanged':
-            //   break;
-            // case 'onGroupDismissed':
-            //   break;
-            // case 'onGroupRecycled':
-            //   break;
-            //
-            // case 'onGrantAdministrator':
-            //   break;
-            // case 'onRevokeAdministrator':
-            //   break;
-            // case 'onQuitFromGroup':
-            //   break;
-            // case 'onReceiveRESTCustomData':
-            //   break;
-            // case 'onGroupAttributeChanged':
-            //   break;
+            case 'onGroupMemberInfoChanged':
+              final i =
+                  Utils.toObj(data, (map) => GroupMembersInfo.fromJson(map));
+              groupManager.listener.groupMemberInfoChanged(i);
+              break;
+            case 'onJoinedGroupAdded':
+              final i = Utils.toObj(data, (map) => GroupInfo.fromJson(map));
+              groupManager.listener.joinedGroupAdded(i);
+              break;
+            case 'onJoinedGroupDeleted':
+              final i = Utils.toObj(data, (map) => GroupInfo.fromJson(map));
+              groupManager.listener.joinedGroupDeleted(i);
+              break;
           }
         } else if (call.method == ListenerType.advancedMsgListener) {
           var type = call.arguments['type'];
           var id = call.arguments['data']['id'];
-          var value = call.arguments['data']['message'];
           switch (type) {
             case 'onRecvNewMessage':
-              var msg = Message.fromJson(_formatJson(value));
-              for (var listener in messageManager.advancedMsgListeners) {
-                if (listener.id == id) {
-                  listener.recvNewMessage(msg);
-                }
-              }
+              var value = call.arguments['data']['newMessage'];
+              final msg = Utils.toObj(value, (map) => Message.fromJson(map));
+              messageManager.msgListener.recvNewMessage(msg);
               break;
             case 'onRecvMessageRevoked':
-              for (var listener in messageManager.advancedMsgListeners) {
-                if (listener.id == id) {
-                  listener.recvMessageRevoked(value);
-                }
-              }
+              var msgID = call.arguments['data']['revokedMessage'];
+              messageManager.msgListener.recvMessageRevoked(msgID);
               break;
             case 'onRecvC2CReadReceipt':
-              var l = _formatJson(value) as List;
-              var list = l.map((e) => HaveReadInfo.fromJson(e)).toList();
-              for (var listener in messageManager.advancedMsgListeners) {
-                if (listener.id == id) {
-                  listener.recvC2CReadReceipt(list);
-                }
-              }
+              var value = call.arguments['data']['c2cMessageReadReceipt'];
+              var list =
+                  Utils.toList(value, (map) => ReadReceiptInfo.fromJson(map));
+              messageManager.msgListener.recvC2CMessageReadReceipt(list);
+              break;
+            case 'onRecvGroupReadReceipt':
+              var value = call.arguments['data']['groupMessageReadReceipt'];
+              var list =
+                  Utils.toList(value, (map) => ReadReceiptInfo.fromJson(map));
+              messageManager.msgListener.recvGroupMessageReadReceipt(list);
               break;
           }
         } else if (call.method == ListenerType.msgSendProgressListener) {
@@ -184,210 +160,203 @@ class IMManager {
           dynamic data = call.arguments['data'];
           switch (type) {
             case 'onSyncServerStart':
-              conversationManager.conversationListener.syncServerStart();
+              conversationManager.listener.syncServerStart();
               break;
             case 'onSyncServerFinish':
-              conversationManager.conversationListener.syncServerFinish();
+              conversationManager.listener.syncServerFinish();
               break;
 
             case 'onSyncServerFailed':
-              conversationManager.conversationListener.syncServerFailed();
+              conversationManager.listener.syncServerFailed();
               break;
             case 'onNewConversation':
-              List<ConversationInfo> list = List.empty(growable: true);
-              if (null != data) {
-                list = (_formatJson(data) as List)
-                    .map((e) => ConversationInfo.fromJson(e))
-                    .toList();
-              }
-              conversationManager.conversationListener.newConversation(list);
+              var list =
+                  Utils.toList(data, (map) => ConversationInfo.fromJson(map));
+              conversationManager.listener.newConversation(list);
               break;
             case 'onConversationChanged':
-              List<ConversationInfo> list = List.empty(growable: true);
-              if (null != data) {
-                list = (_formatJson(data) as List)
-                    .map((e) => ConversationInfo.fromJson(e))
-                    .toList();
-              }
-              conversationManager.conversationListener
-                  .conversationChanged(list);
+              var list =
+                  Utils.toList(data, (map) => ConversationInfo.fromJson(map));
+              conversationManager.listener.conversationChanged(list);
               break;
             case 'onTotalUnreadMessageCountChanged':
-              conversationManager.conversationListener
+              conversationManager.listener
                   .totalUnreadMessageCountChanged(data ?? 0);
               break;
           }
         } else if (call.method == ListenerType.friendListener) {
           String type = call.arguments['type'];
           dynamic data = call.arguments['data'];
-          UserInfo u = UserInfo.fromJson(_formatJson(data));
+
           switch (type) {
-            case 'onBlackListAdd':
-              friendshipManager.friendshipListener.blackListAdd(u);
+            case 'onBlacklistAdded':
+              final u = Utils.toObj(data, (map) => BlacklistInfo.fromJson(map));
+              friendshipManager.listener.blacklistAdded(u);
               break;
-            case 'onBlackListDeleted':
-              friendshipManager.friendshipListener.blackListDeleted(u);
+            case 'onBlacklistDeleted':
+              final u = Utils.toObj(data, (map) => BlacklistInfo.fromJson(map));
+              friendshipManager.listener.blacklistDeleted(u);
               break;
-            case 'onFriendApplicationListAccept':
-              friendshipManager.friendshipListener
-                  .friendApplicationListAccept(u);
+            case 'onFriendApplicationAccepted':
+              final u = Utils.toObj(
+                  data, (map) => FriendApplicationInfo.fromJson(map));
+              friendshipManager.listener.friendApplicationAccepted(u);
               break;
-            case 'onFriendApplicationListAdded':
-              friendshipManager.friendshipListener
-                  .friendApplicationListAdded(u);
+            case 'onFriendApplicationAdded':
+              final u = Utils.toObj(
+                  data, (map) => FriendApplicationInfo.fromJson(map));
+              friendshipManager.listener.friendApplicationAdded(u);
               break;
-            case 'onFriendApplicationListDeleted':
-              friendshipManager.friendshipListener
-                  .friendApplicationListDeleted(u);
+            case 'onFriendApplicationDeleted':
+              final u = Utils.toObj(
+                  data, (map) => FriendApplicationInfo.fromJson(map));
+              friendshipManager.listener.friendApplicationDeleted(u);
               break;
-            case 'onFriendApplicationListReject':
-              friendshipManager.friendshipListener
-                  .friendApplicationListReject(u);
+            case 'onFriendApplicationListRejected':
+              final u = Utils.toObj(
+                  data, (map) => FriendApplicationInfo.fromJson(map));
+              friendshipManager.listener.friendApplicationRejected(u);
               break;
             case 'onFriendInfoChanged':
-              friendshipManager.friendshipListener.friendInfoChanged(u);
+              final u = Utils.toObj(data, (map) => FriendInfo.fromJson(map));
+              friendshipManager.listener.friendInfoChanged(u);
               break;
-            case 'onFriendListAdded':
-              friendshipManager.friendshipListener.friendListAdded(u);
+            case 'onFriendAdded':
+              final u = Utils.toObj(data, (map) => FriendInfo.fromJson(map));
+              friendshipManager.listener.friendAdded(u);
               break;
-            case 'onFriendListDeleted':
-              friendshipManager.friendshipListener.friendListDeleted(u);
+            case 'onFriendDeleted':
+              final u = Utils.toObj(data, (map) => FriendInfo.fromJson(map));
+              friendshipManager.listener.friendDeleted(u);
+              break;
+          }
+        } else if (call.method == ListenerType.signalingListener) {
+          String type = call.arguments['type'];
+          dynamic data = call.arguments['data'];
+          final u = Utils.toObj(data, (map) => SignalingInfo.fromJson(map));
+          switch (type) {
+            case 'onInvitationCancelled':
+              signalingManager.listener.invitationCancelled(u);
+              break;
+            case 'onInvitationTimeout':
+              signalingManager.listener.invitationTimeout(u);
+              break;
+            case 'onInviteeAccepted':
+              signalingManager.listener.inviteeAccepted(u);
+              break;
+            case 'onInviteeRejected':
+              signalingManager.listener.inviteeRejected(u);
+              break;
+            case 'onReceiveNewInvitation':
+              signalingManager.listener.receiveNewInvitation(u);
+              break;
+            case 'onInviteeAcceptedByOtherDevice':
+              signalingManager.listener.inviteeAcceptedByOtherDevice(u);
+              break;
+            case 'onInviteeRejectedByOtherDevice':
+              signalingManager.listener.inviteeRejectedByOtherDevice(u);
               break;
           }
         }
       } catch (err) {
         print(
-            "回调失败了，数据类型异常。$err ${call.method} ${call.arguments['type']} ${call.arguments['data']}");
+            "回调失败了。$err ${call.method} ${call.arguments['type']} ${call.arguments['data']}");
       }
       return Future.value(null);
     });
   }
 
-  /// init sdk
+  /// Initialize SDK
   ///
-  /// @params platform[IMPlatform]
-  /// @params ipApi: api server ip address
-  /// @params ipWs: websocket ip address
-  /// @params dbPath: data storage directory
+  /// [platform]  platform number  [IMPlatform]
+  /// [apiAddr]   api server ip address
+  /// [wsAddr]    webSocket ip address
+  /// [dataDir]   data storage directory
+  ///
+  /// 初始化SDK
+  ///
+  /// [platform]  平台编号[IMPlatform]
+  /// [apiAddr]   SDK api地址
+  /// [wsAddr]    SDK websocket地址
+  /// [dataDir]   SDK数据库存储目录
   Future<dynamic> initSDK({
     required int platform,
-    required String ipApi,
-    required String ipWs,
-    required String dbPath,
-    required InitSDKListener listener,
+    required String apiAddr,
+    required String wsAddr,
+    required String dataDir,
+    required OnConnectListener listener,
+    int logLevel = 6,
+    String objectStorage = 'cos',
+    String? operationID,
   }) {
-    _initSDKListener = listener;
-    return _channel
-        .invokeMethod(
-            'initSDK',
-            _buildParam(
-              {
-                "platform": platform,
-                "ipApi": ipApi,
-                "ipWs": ipWs,
-                "dbDir": dbPath
-              },
-            ))
-        .then((value) {
-      isInitialized = true;
-      return value;
-    });
+    _connectListener = listener;
+    return _channel.invokeMethod(
+        'initSDK',
+        _buildParam(
+          {
+            "platform": platform,
+            "api_addr": apiAddr,
+            "ws_addr": wsAddr,
+            "data_dir": dataDir,
+            "log_level": logLevel,
+            "object_storage": objectStorage,
+            "operationID": Utils.checkOperationID(operationID),
+          },
+        ));
   }
 
-  ///
+  @deprecated
   Future<dynamic> unInitSDK() {
-    return _channel.invokeMethod('unInitSDK', _buildParam({})).then((value) {
-      isInitialized = false;
-      return value;
-    });
+    return _channel.invokeMethod('unInitSDK', _buildParam({}));
   }
 
-  /// login sdk
-  ///
-  Future<dynamic> login({required String uid, required String token}) async {
-    this.uid = uid;
-    return _channel.invokeMethod(
+  /// Login sdk
+  /// 登录
+  Future<UserInfo> login({
+    required String uid,
+    required String token,
+    String? operationID,
+  }) async {
+    await _channel.invokeMethod(
       'login',
-      _buildParam({'uid': uid, 'token': token}),
+      _buildParam({
+        'uid': uid,
+        'token': token,
+        'operationID': Utils.checkOperationID(operationID),
+      }),
     );
+    this.isLogined = true;
+    this.uid = uid;
+    this.uInfo = await userManager.getSelfUserInfo();
+    return uInfo;
   }
 
-  ///
-  Future<dynamic> logout() {
-    return _channel.invokeMethod('logout', _buildParam({}));
-  }
-
-  ///
-  Future<int?> getLoginStatus() {
-    return _channel.invokeMethod<int>('getLoginStatus', _buildParam({}));
-  }
-
-  ///
-  Future<String?> getLoginUid() {
-    return Future.value(uid);
-    // return _channel.invokeMethod<String>('getLoginUid', _buildParam({}));
-  }
-
-  ///
-  Future<UserInfo> getLoginUserInfo() {
-    return getUsersInfo([uid]).then((list) => uInfo = list[0]);
-  }
-
-  ///
-  Future<String?> setSelfInfo(
-      {required String uid,
-      String? name,
-      String? icon,
-      int? gender,
-      String? mobile,
-      String? birth,
-      String? email,
-      String? ex}) {
-    return _channel.invokeMethod(
-        'setSelfInfo',
+  /// Logout sdk
+  /// 登出
+  Future<dynamic> logout({String? operationID}) async {
+    var value = await _channel.invokeMethod(
+        'logout',
         _buildParam({
-          'uid': uid,
-          'name': name,
-          'icon': icon,
-          'gender': gender,
-          'mobile': mobile,
-          'birth': birth,
-          'email': email,
-          'ex': ex,
+          'operationID': Utils.checkOperationID(operationID),
         }));
-    // .then((value) => UserInfo.fromJson(value));
+    this.isLogined = false;
+    return value;
   }
 
   ///
-  Future<List<UserInfo>> getUsersInfo(List<String> uidList) {
-    return _channel
-        .invokeMethod('getUsersInfo', _buildParam({'uidList': uidList}))
-        .then((value) => _toList(value));
-  }
+  Future<int?> getLoginStatus() =>
+      _channel.invokeMethod<int>('getLoginStatus', _buildParam({}));
 
-  ///
-  Future<dynamic> forceSyncLoginUerInfo(List<String> uidList) {
-    return _channel.invokeMethod('forceSyncLoginUerInfo', _buildParam({}));
-  }
+  /// Current user id
+  /// 获取当前登录用户id
+  Future<String> getLoginUserID() async => uid;
 
-  ///
-  Future<dynamic> forceReConn() {
-    return _channel.invokeMethod('forceReConn', _buildParam({}));
-  }
+  /// Current user info
+  /// 获取当前登录用户信息
+  Future<UserInfo> getLoginUserInfo() async => uInfo;
 
   static Map _buildParam(Map param) {
     param["ManagerName"] = "imManager";
     return param;
-  }
-
-  static List<UserInfo> _toList(String value) =>
-      (_formatJson(value) as List).map((e) => UserInfo.fromJson(e)).toList();
-
-  static dynamic _formatJson(value) {
-    return jsonDecode(_printValue(value));
-  }
-
-  static String _printValue(value) {
-    return value;
   }
 }
