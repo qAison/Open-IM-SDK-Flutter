@@ -19,6 +19,7 @@ class Message {
   String? content;
   int? seq;
   bool? isRead;
+  int? hasReadTime;
 
   /// [MessageStatus]
   int? status;
@@ -37,6 +38,7 @@ class Message {
   MergeElem? mergeElem;
   NotificationElem? notificationElem;
   FaceElem? faceElem;
+  AttachedInfoElem? attachedInfoElem;
 
   Message({
     this.clientMsgID,
@@ -55,6 +57,7 @@ class Message {
     this.content,
     this.seq,
     this.isRead,
+    this.hasReadTime,
     this.status,
     this.offlinePush,
     this.attachedInfo,
@@ -71,6 +74,7 @@ class Message {
     this.mergeElem,
     this.notificationElem,
     this.faceElem,
+    this.attachedInfoElem,
   });
 
   Message.fromJson(Map<String, dynamic> json) {
@@ -127,6 +131,10 @@ class Message {
         : null;
     faceElem =
         json['faceElem'] != null ? FaceElem.fromJson(json['faceElem']) : null;
+    attachedInfoElem = json['attachedInfoElem'] != null
+        ? AttachedInfoElem.fromJson(json['attachedInfoElem'])
+        : null;
+    hasReadTime = json['hasReadTime'] ?? attachedInfoElem?.hasReadTime;
   }
 
   Map<String, dynamic> toJson() {
@@ -146,6 +154,7 @@ class Message {
     data['content'] = this.content;
     data['seq'] = this.seq;
     data['isRead'] = this.isRead;
+    data['hasReadTime'] = this.hasReadTime;
     data['status'] = this.status;
     data['offlinePush'] = this.offlinePush?.toJson();
     data['attachedInfo'] = this.attachedInfo;
@@ -163,6 +172,7 @@ class Message {
     data['mergeElem'] = this.mergeElem?.toJson();
     data['notificationElem'] = this.notificationElem?.toJson();
     data['faceElem'] = this.faceElem?.toJson();
+    data['attachedInfoElem'] = this.attachedInfoElem?.toJson();
     return data;
   }
 
@@ -192,6 +202,7 @@ class Message {
     content = message.content;
     seq = message.seq;
     isRead = message.isRead;
+    hasReadTime = message.hasReadTime;
     status = message.status;
     offlinePush = message.offlinePush;
     attachedInfo = message.attachedInfo;
@@ -209,6 +220,7 @@ class Message {
     mergeElem = message.mergeElem;
     notificationElem = message.notificationElem;
     faceElem = message.faceElem;
+    attachedInfoElem = message.attachedInfoElem;
   }
 }
 
@@ -412,8 +424,16 @@ class AtElem {
   String? text;
   List<String>? atUserList;
   bool? isAtSelf;
+  List<AtUserInfo>? atUsersInfo;
+  Message? quoteMessage;
 
-  AtElem({this.text, this.atUserList, this.isAtSelf});
+  AtElem({
+    this.text,
+    this.atUserList,
+    this.isAtSelf,
+    this.atUsersInfo,
+    this.quoteMessage,
+  });
 
   AtElem.fromJson(Map<String, dynamic> json) {
     text = json['text'];
@@ -421,6 +441,14 @@ class AtElem {
       atUserList = (json['atUserList'] as List).map((e) => '$e').toList();
     }
     isAtSelf = json['isAtSelf'];
+    if (json['atUsersInfo'] is List) {
+      atUsersInfo = (json['atUsersInfo'] as List)
+          .map((e) => AtUserInfo.fromJson(e))
+          .toList();
+    }
+    quoteMessage = null != json['quoteMessage']
+        ? Message.fromJson(json['quoteMessage'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -428,6 +456,8 @@ class AtElem {
     data['text'] = this.text;
     data['atUserList'] = this.atUserList;
     data['isAtSelf'] = this.isAtSelf;
+    data['atUsersInfo'] = this.atUsersInfo?.map((e) => e.toJson()).toList();
+    data['quoteMessage'] = this.quoteMessage?.toJson();
     return data;
   }
 }
@@ -572,6 +602,57 @@ class FaceElem {
   }
 }
 
+class AttachedInfoElem {
+  GroupHasReadInfo? groupHasReadInfo;
+
+  /// 单聊有效
+  bool? isPrivateChat;
+  int? hasReadTime;
+
+  AttachedInfoElem({
+    this.groupHasReadInfo,
+    this.isPrivateChat,
+    this.hasReadTime,
+  });
+
+  AttachedInfoElem.fromJson(Map<String, dynamic> json) {
+    groupHasReadInfo = json['groupHasReadInfo'] == null
+        ? null
+        : GroupHasReadInfo.fromJson(json['groupHasReadInfo']);
+    isPrivateChat = json['isPrivateChat'];
+    hasReadTime = json['hasReadTime'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final data = Map<String, dynamic>();
+    data['groupHasReadInfo'] = this.groupHasReadInfo?.toJson();
+    data['isPrivateChat'] = this.isPrivateChat;
+    data['hasReadTime'] = this.hasReadTime;
+    return data;
+  }
+}
+
+class GroupHasReadInfo {
+  List<String>? hasReadUserIDList;
+  int? hasReadCount;
+
+  GroupHasReadInfo.fromJson(Map<String, dynamic> json) {
+    if (json['hasReadUserIDList'] == null) {
+      hasReadUserIDList = <String>[];
+    } else {
+      hasReadUserIDList = (json['hasReadUserIDList'] as List).cast<String>();
+    }
+    hasReadCount = json['hasReadCount'] ?? 0;
+  }
+
+  Map<String, dynamic> toJson() {
+    final data = Map<String, dynamic>();
+    data['hasReadUserIDList'] = this.hasReadUserIDList;
+    data['hasReadCount'] = this.hasReadCount;
+    return data;
+  }
+}
+
 class ReadReceiptInfo {
   String? userID;
   String? groupID;
@@ -592,6 +673,7 @@ class ReadReceiptInfo {
 
   ReadReceiptInfo.fromJson(Map<String, dynamic> json) {
     userID = json['uid'] ?? json['userID'];
+    groupID = json['groupID'];
     if (json['msgIDList'] is List) {
       msgIDList = (json['msgIDList'] as List).map((e) => '$e').toList();
     }
@@ -638,6 +720,25 @@ class OfflinePushInfo {
     data['ex'] = this.ex;
     data['iOSPushSound'] = this.iOSPushSound;
     data['iOSBadgeCount'] = this.iOSBadgeCount;
+    return data;
+  }
+}
+
+class AtUserInfo {
+  String? atUserID;
+  String? groupNickname;
+
+  AtUserInfo({this.atUserID, this.groupNickname});
+
+  AtUserInfo.fromJson(Map<String, dynamic> json) {
+    atUserID = json['atUserID'];
+    groupNickname = json['groupNickname'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final data = Map<String, dynamic>();
+    data['atUserID'] = this.atUserID;
+    data['groupNickname'] = this.groupNickname;
     return data;
   }
 }

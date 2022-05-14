@@ -19,6 +19,11 @@ public class ConversationManager: BaseServiceManager {
         self["getConversationIDBySessionType"] = getConversationIDBySessionType
         self["setConversationRecvMessageOpt"] = setConversationRecvMessageOpt
         self["getConversationRecvMessageOpt"] = getConversationRecvMessageOpt
+        self["setOneConversationPrivateChat"] = setOneConversationPrivateChat
+        self["deleteConversationFromLocalAndSvr"] = deleteConversationFromLocalAndSvr
+        self["deleteAllConversationFromLocal"] = deleteAllConversationFromLocal
+        self["resetConversationGroupAtType"] = resetConversationGroupAtType
+        self["getAtAllTag"] = getAtAllTag
     }
     
     func setConversationListener(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
@@ -77,6 +82,26 @@ public class ConversationManager: BaseServiceManager {
 
     func getConversationRecvMessageOpt(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkGetConversationRecvMessageOpt(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "conversationIDList"])
+    }
+    
+    func setOneConversationPrivateChat(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkSetOneConversationPrivateChat(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"],methodCall[bool: "isPrivate"])
+    }
+    
+    func deleteConversationFromLocalAndSvr(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkDeleteConversationFromLocalAndSvr(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"])
+    }
+    
+    func deleteAllConversationFromLocal(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkDeleteAllConversationFromLocal(BaseCallback(result: result), methodCall[string: "operationID"])
+    }
+    
+    func resetConversationGroupAtType(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkResetConversationGroupAtType(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"])
+    }
+    
+    func getAtAllTag(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        callBack(result, Open_im_sdkGetAtAllTag())
     }
 }
 

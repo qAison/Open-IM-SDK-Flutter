@@ -204,6 +204,63 @@ class ConversationManager {
               }))
           .then((value) => Utils.toListMap(value));
 
+  /// burn after reading
+  /// 阅后即焚
+  Future<dynamic> setOneConversationPrivateChat({
+    required String conversationID,
+    required bool isPrivate,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'setOneConversationPrivateChat',
+          _buildParam({
+            "conversationID": conversationID,
+            "isPrivate": isPrivate,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
+
+  /// Delete conversation from local and service
+  /// 删除会话
+  Future<dynamic> deleteConversationFromLocalAndSvr({
+    required String conversationID,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'deleteConversationFromLocalAndSvr',
+          _buildParam({
+            "conversationID": conversationID,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
+
+  /// Delete conversation from local
+  /// 删除会话
+  Future<dynamic> deleteAllConversationFromLocal({
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'deleteAllConversationFromLocal',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }));
+
+  /// Reset group converstaion at type
+  /// 重置at标准位
+  Future<dynamic> resetConversationGroupAtType({
+    required String conversationID,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'resetConversationGroupAtType',
+          _buildParam({
+            "conversationID": conversationID,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
+
+  /// Get @ all member tag
+  /// 查询at所有人标识
+  Future<dynamic> getAtAllTag() =>
+      _channel.invokeMethod('getAtAllTag', _buildParam({}));
+
   /// Custom sort for conversation list
   /// 会话列表自定义排序规则。
   List<ConversationInfo> simpleSort(List<ConversationInfo> list) => list

@@ -19,7 +19,7 @@ public class IMManager extends BaseManager {
 
     public void login(MethodCall methodCall, MethodChannel.Result result) {
         Open_im_sdk.login(
-                new OnBaseListener(result),
+                new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
                 value(methodCall, "uid"),
                 value(methodCall, "token")
@@ -28,7 +28,7 @@ public class IMManager extends BaseManager {
 
     public void logout(MethodCall methodCall, MethodChannel.Result result) {
         Open_im_sdk.logout(
-                new OnBaseListener(result),
+                new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID")
         );
     }
@@ -37,29 +37,11 @@ public class IMManager extends BaseManager {
         CommonUtil.runMainThreadReturn(result, Open_im_sdk.getLoginStatus());
     }
 
-//    public void getLoginUid(MethodCall methodCall, MethodChannel.Result result) {
-//        CommonUtil.runMainThreadReturn(result, Open_im_sdk.getLoginUid());
-//    }
+    public void wakeUp(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.wakeUp(
+                new OnBaseListener(result, methodCall),
+                value(methodCall, "operationID")
+        );
+    }
 
-//    public void getUsersInfo(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.getUsersInfo(
-//                jsonValue(methodCall, "uidList"), new BaseListener(result));
-//    }
-
-//    public void setSelfInfo(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.setSelfInfo(
-//                jsonValue(methodCall), new BaseListener(result));
-//    }
-
-//    public void forceSyncLoginUerInfo(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.forceSyncLoginUerInfo();
-//    }
-
-//    public void forceReConn(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.forceReConn();
-//    }
-
-//    public void setSdkLog(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.setSdkLog(value(methodCall, "sdkLog"));
-//    }
 }

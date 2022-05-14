@@ -320,6 +320,93 @@ class GroupManager {
             'operationID': Utils.checkOperationID(operationID),
           }));
 
+  /// Dissmiss group
+  /// 解散群
+  Future<dynamic> dismissGroup({
+    required String groupID,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'dismissGroup',
+          _buildParam({
+            'gid': groupID,
+            'operationID': Utils.checkOperationID(operationID),
+          }));
+
+  /// Enable group mute
+  /// 开启群禁言
+  Future<dynamic> changeGroupMute({
+    required String groupID,
+    required bool mute,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'changeGroupMute',
+          _buildParam({
+            'gid': groupID,
+            'mute': mute,
+            'operationID': Utils.checkOperationID(operationID),
+          }));
+
+  /// Mute group members
+  /// 禁言群成员
+  Future<dynamic> changeGroupMemberMute({
+    required String groupID,
+    required String userID,
+    int seconds = 0,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'changeGroupMemberMute',
+          _buildParam({
+            'gid': groupID,
+            'uid': userID,
+            'seconds': seconds,
+            'operationID': Utils.checkOperationID(operationID),
+          }));
+
+  /// Set group user nickname
+  /// 设置群成员昵称
+  Future<dynamic> setGroupMemberNickname({
+    required String groupID,
+    required String userID,
+    String? groupNickname,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'setGroupMemberNickname',
+          _buildParam({
+            'gid': groupID,
+            'uid': userID,
+            'groupNickname': groupNickname ?? '',
+            'operationID': Utils.checkOperationID(operationID),
+          }));
+
+  /// Search group
+  /// 查询群
+  /// [keywordList] 搜索关键词，目前仅支持一个关键词搜索，不能为空
+  /// [isSearchGroupID] 是否以关键词搜索群ID(注：两个不可以同时为false)，为空默认false
+  /// [isSearchGroupName] 是否以关键词搜索群名字，为空默认false
+  Future<List<GroupInfo>> searchGroups({
+    List<String> keywordList = const [],
+    bool isSearchGroupID = false,
+    bool isSearchGroupName = false,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'searchGroups',
+              _buildParam({
+                'searchParam': {
+                  'keywordList': keywordList,
+                  'isSearchGroupID': isSearchGroupID,
+                  'isSearchGroupName': isSearchGroupName,
+                },
+                'operationID': Utils.checkOperationID(operationID),
+              }))
+          .then(
+              (value) => Utils.toList(value, (map) => GroupInfo.fromJson(map)));
+
   static Map _buildParam(Map param) {
     param["ManagerName"] = "groupManager";
     return param;

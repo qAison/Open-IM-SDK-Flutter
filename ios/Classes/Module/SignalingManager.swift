@@ -11,6 +11,7 @@ public class SignalingManager: BaseServiceManager {
         self["signalingAccept"] = signalingAccept
         self["signalingReject"] = signalingReject
         self["signalingCancel"] = signalingCancel
+        self["signalingHungUp"] = signalingHungUp
     }
 
     func setSignalingListener(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
@@ -37,10 +38,13 @@ public class SignalingManager: BaseServiceManager {
     func signalingCancel(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkSignalingCancel(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "signalingInfo"])
     }
-    
+
+    func signalingHungUp(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkSignalingHungUp(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "signalingInfo"])
+    }
 }
 public class SignalingListener: NSObject, Open_im_sdk_callbackOnSignalingListenerProtocol {
-    
+   
     private let channel:FlutterMethodChannel
     
     init(channel:FlutterMethodChannel) {
@@ -74,5 +78,9 @@ public class SignalingListener: NSObject, Open_im_sdk_callbackOnSignalingListene
     public func onReceiveNewInvitation(_ s: String?) {
         CommonUtil.emitEvent(channel: channel, method: "signalingListener", type: "onReceiveNewInvitation", errCode: nil, errMsg: nil, data: s)
     }
-
+    
+    public func onHangUp(_ s: String?) {
+        CommonUtil.emitEvent(channel: channel, method: "signalingListener", type: "onHangUp", errCode: nil, errMsg: nil, data: s)
+    }
+    
 }

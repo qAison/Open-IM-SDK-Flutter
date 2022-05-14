@@ -12,11 +12,10 @@ public class MessageManager: BaseServiceManager {
         self["getHistoryMessageList"] = getHistoryMessageList
         self["revokeMessage"] = revokeMessage
         self["deleteMessageFromLocalStorage"] = deleteMessageFromLocalStorage
-        self["deleteMessages"] = deleteMessages
         self["insertSingleMessageToLocalStorage"] = insertSingleMessageToLocalStorage
         self["insertGroupMessageToLocalStorage"] = insertGroupMessageToLocalStorage
-        // self["findMessages"] = findMessages
         self["markC2CMessageAsRead"] = markC2CMessageAsRead
+        self["markGroupMessageAsRead"] = markGroupMessageAsRead
         self["typingStatusUpdate"] = typingStatusUpdate
         self["createTextMessage"] = createTextMessage
         self["createTextAtMessage"] = createTextAtMessage
@@ -35,9 +34,16 @@ public class MessageManager: BaseServiceManager {
         self["createQuoteMessage"] = createQuoteMessage
         self["createCardMessage"] = createCardMessage
         self["createFaceMessage"] = createFaceMessage
-        // self["forceSyncMsg"] = forceSyncMsg
         self["clearC2CHistoryMessage"] = clearC2CHistoryMessage
         self["clearGroupHistoryMessage"] = clearGroupHistoryMessage
+        self["searchLocalMessages"] = searchLocalMessages
+        self["deleteMessageFromLocalAndSvr"] = deleteMessageFromLocalAndSvr
+        self["deleteAllMsgFromLocal"] = deleteAllMsgFromLocal
+        self["deleteAllMsgFromLocalAndSvr"] = deleteAllMsgFromLocalAndSvr
+        self["markMessageAsReadByConID"] = markMessageAsReadByConID
+        self["clearC2CHistoryMessageFromLocalAndSvr"] = clearC2CHistoryMessageFromLocalAndSvr
+        self["clearGroupHistoryMessageFromLocalAndSvr"] = clearGroupHistoryMessageFromLocalAndSvr
+        self["getHistoryMessageListReverse"] = getHistoryMessageListReverse
     }
     
     func setAdvancedMsgListener(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
@@ -65,9 +71,6 @@ public class MessageManager: BaseServiceManager {
         Open_im_sdkDeleteMessageFromLocalStorage(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
     }
     
-    // deprecated
-    func deleteMessages(methodCall: FlutterMethodCall, result: FlutterResult){
-    }
     
     func insertSingleMessageToLocalStorage(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkInsertSingleMessageToLocalStorage(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "message"],
@@ -79,14 +82,14 @@ public class MessageManager: BaseServiceManager {
                                                      methodCall[string: "groupID"], methodCall[string: "senderID"])
     }
     
-    // func findMessages(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-    //     Open_im_sdkFindMessages(BaseCallback(result: result), methodCall[jsonString: "messageIDList"])
-    // }
-    
     func markC2CMessageAsRead(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkMarkC2CMessageAsRead(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "userID"], methodCall[jsonString: "messageIDList"])
     }
-    
+
+    func markGroupMessageAsRead(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkMarkGroupMessageAsRead(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "groupID"], methodCall[jsonString: "messageIDList"])
+    }
+
     func typingStatusUpdate(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkTypingStatusUpdate(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "userID"], methodCall[string: "msgTip"])
     }
@@ -96,7 +99,8 @@ public class MessageManager: BaseServiceManager {
     }
     
     func createTextAtMessage(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-        callBack(result, Open_im_sdkCreateTextAtMessage(methodCall[string: "operationID"], methodCall[string: "text"], methodCall[jsonString: "atUserList"]))
+        callBack(result, Open_im_sdkCreateTextAtMessage(methodCall[string: "operationID"], methodCall[string: "text"],
+                                                        methodCall[jsonString: "atUserIDList"], methodCall[jsonString: "atUserInfoList"], methodCall[jsonString: "quoteMessage"]))
     }
     
     func createImageMessage(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
@@ -169,10 +173,6 @@ public class MessageManager: BaseServiceManager {
     func createFaceMessage(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         callBack(result, Open_im_sdkCreateFaceMessage(methodCall[string: "operationID"], methodCall[int: "index"], methodCall[string: "data"]))
     }
-    // func forceSyncMsg(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
-    //     Open_im_sdkForceSyncMsg()
-    //     callBack(result)
-    // }
     
     func clearC2CHistoryMessage(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkClearC2CHistoryMessage(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "userID"])
@@ -180,6 +180,38 @@ public class MessageManager: BaseServiceManager {
     
     func clearGroupHistoryMessage(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
         Open_im_sdkClearGroupHistoryMessage(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "groupID"])
+    }
+    
+    func searchLocalMessages(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkSearchLocalMessages(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[jsonString: "filter"])
+    }
+    
+    func deleteMessageFromLocalAndSvr(methodCall: FlutterMethodCall, result: @escaping FlutterResult) {
+        Open_im_sdkDeleteMessageFromLocalAndSvr(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
+    }
+
+    func deleteAllMsgFromLocal(methodCall: FlutterMethodCall, result: @escaping FlutterResult) {
+        Open_im_sdkDeleteAllMsgFromLocal(BaseCallback(result: result), methodCall[string: "operationID"])
+    }
+
+    func deleteAllMsgFromLocalAndSvr(methodCall: FlutterMethodCall, result: @escaping FlutterResult) {
+        Open_im_sdkDeleteAllMsgFromLocalAndSvr(BaseCallback(result: result), methodCall[string: "operationID"])
+    }
+
+    func markMessageAsReadByConID(methodCall: FlutterMethodCall, result: @escaping FlutterResult) {
+        Open_im_sdkMarkMessageAsReadByConID(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "conversationID"], methodCall[jsonString: "messageIDList"])
+    }
+    
+    func clearC2CHistoryMessageFromLocalAndSvr(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkClearC2CHistoryMessageFromLocalAndSvr(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "userID"])
+    }
+    
+    func clearGroupHistoryMessageFromLocalAndSvr(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkClearGroupHistoryMessageFromLocalAndSvr(BaseCallback(result: result), methodCall[string: "operationID"], methodCall[string: "groupID"])
+    }
+    
+    func getHistoryMessageListReverse(methodCall: FlutterMethodCall, result: @escaping FlutterResult){
+        Open_im_sdkGetHistoryMessageListReverse(BaseCallback(result: result), methodCall[string: "operationID"], methodCall.toJsonString())
     }
     
     public class SendMsgProgressListener: NSObject, Open_im_sdk_callbackSendMsgCallBackProtocol {

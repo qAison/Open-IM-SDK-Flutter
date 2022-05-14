@@ -13,6 +13,7 @@ class IMManager {
 
   // late OfflinePushManager offlinePushManager;
   late SignalingManager signalingManager;
+  late WorkMomentsManager workMomentsManager;
 
   late OnConnectListener _connectListener;
   late String uid;
@@ -27,6 +28,7 @@ class IMManager {
     userManager = UserManager(_channel);
     // offlinePushManager = OfflinePushManager(_channel);
     signalingManager = SignalingManager(_channel);
+    workMomentsManager = WorkMomentsManager(_channel);
     _addNativeCallback(_channel);
   }
 
@@ -212,7 +214,7 @@ class IMManager {
                   data, (map) => FriendApplicationInfo.fromJson(map));
               friendshipManager.listener.friendApplicationDeleted(u);
               break;
-            case 'onFriendApplicationListRejected':
+            case 'onFriendApplicationRejected':
               final u = Utils.toObj(
                   data, (map) => FriendApplicationInfo.fromJson(map));
               friendshipManager.listener.friendApplicationRejected(u);
@@ -255,6 +257,16 @@ class IMManager {
               break;
             case 'onInviteeRejectedByOtherDevice':
               signalingManager.listener.inviteeRejectedByOtherDevice(u);
+              break;
+            case 'onHangUp':
+              signalingManager.listener.hangup(u);
+              break;
+          }
+        } else if (call.method == ListenerType.workMomentsListener) {
+          String type = call.arguments['type'];
+          switch (type) {
+            case 'OnRecvNewNotification':
+              workMomentsManager.listener.recvNewNotification();
               break;
           }
         }
@@ -354,6 +366,13 @@ class IMManager {
   /// Current user info
   /// 获取当前登录用户信息
   Future<UserInfo> getLoginUserInfo() async => uInfo;
+
+  /// wakeup
+  Future wakeUp({String? operationID}) => _channel.invokeMethod(
+      'wakeUp',
+      _buildParam({
+        'operationID': Utils.checkOperationID(operationID),
+      }));
 
   static Map _buildParam(Map param) {
     param["ManagerName"] = "imManager";
